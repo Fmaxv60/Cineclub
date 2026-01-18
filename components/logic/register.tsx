@@ -80,7 +80,8 @@ export function RegisterForm() {
     <div className="theme-cineclub flex items-center justify-center min-h-screen bg-background">
       <Card className="w-full max-w-sm">
         <CardHeader>
-          <CardTitle className="text-center text-primary">Inscription</CardTitle>
+          <CardTitle className="text-center text-3xl">Metrow Cine Club</CardTitle>
+          <CardTitle className="mt-2 text-center text-primary">Inscription</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
