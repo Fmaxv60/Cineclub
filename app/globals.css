@@ -123,3 +123,38 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Thème Cineclub (palette verte) */
+.theme-cineclub {
+  --background: #072824;
+  --foreground: #ffffff;
+  --card: #1B4F3E;
+  --card-foreground: #ffffff;
+  --popover: #1B4F3E;
+  --popover-foreground: #ffffff;
+  --primary: #6CA55E; /* CTA vibrant */
+  --primary-foreground: #072824;
+  --secondary: #1B4F3E; /* surfaces */
+  --secondary-foreground: #ffffff;
+  --muted: #3D7A52;
+  --muted-foreground: #e6f2ea;
+  --accent: #A9D066; /* highlight */
+  --accent-foreground: #072824;
+  --destructive: #B00020; /* reste rouge pour les erreurs */
+  --border: #3D7A52;
+  --input: #3D7A52; /* bord des inputs */
+  --ring: #A9D066; /* focus */
+  --chart-1: #1B4F3E;
+  --chart-2: #3D7A52;
+  --chart-3: #6CA55E;
+  --chart-4: #A9D066;
+  --chart-5: #072824;
+  --sidebar: #072824;
+  --sidebar-foreground: #ffffff;
+  --sidebar-primary: #1B4F3E;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #6CA55E;
+  --sidebar-accent-foreground: #072824;
+  --sidebar-border: #3D7A52;
+  --sidebar-ring: #A9D066;
+}

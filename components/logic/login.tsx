@@ -71,16 +71,16 @@ export function LoginForm() {
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-[#03001e]">
-      <Card className="w-full max-w-sm border border-[#7303c0] bg-white/5 text-white backdrop-blur-md">
+    <div className="theme-cineclub flex items-center justify-center min-h-screen bg-background">
+      <Card className="w-full max-w-sm">
         <CardHeader>
-          <CardTitle className="text-center text-[#ec38bc]">Connexion</CardTitle>
+          <CardTitle className="text-center text-primary">Connexion</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             {errors.length > 0 && (
-              <div className="bg-red-500/20 border border-red-500 rounded p-3">
-                <ul className="space-y-1 text-sm text-red-200">
+              <div className="bg-destructive/20 border border-destructive rounded p-3">
+                <ul className="space-y-1 text-sm text-destructive">
                   {errors.map((error, i) => (
                     <li key={i}>• {error}</li>
                   ))}
@@ -94,7 +94,7 @@ export function LoginForm() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="bg-[#03001e] border-[#7303c0] text-white mt-2"
+                className="mt-2 bg-secondary/20 text-foreground"
                 required
               />
             </div>
@@ -105,24 +105,20 @@ export function LoginForm() {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="bg-[#03001e] border-[#7303c0] text-white mt-2"
+                className="mt-2 bg-secondary/20 text-foreground"
                 required
               />
             </div>
-            <Button
-              type="submit"
-              className="w-full bg-[#7303c0] hover:bg-[#ec38bc] text-white"
-              disabled={loading}
-            >
+            <Button type="submit" className="w-full" disabled={loading}>
               {loading ? "Connexion..." : "Se connecter"}
             </Button>
           </form>
 
-          <Separator className="mt-6 border-t border-[#7303c0]" />
+          <Separator className="mt-6" />
             
             <div className="text-center text-sm text-muted-foreground mt-4">
                 Pas encore de compte ? {" "}
-                <a href="/register" className="text-[#ec38bc] hover:underline font-medium">
+                <a href="/register" className="text-accent hover:underline font-medium">
                     Créer un compte
                 </a>
             </div>

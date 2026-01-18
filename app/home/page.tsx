@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { getTokenFromStorage } from "@/lib/token"
+import { Button } from "@/components/ui/button"
 
 export default function Home() {
   const router = useRouter()
@@ -39,27 +40,25 @@ export default function Home() {
 
   if (loading) {
     return (
-      <main className="flex items-center justify-center min-h-screen bg-[#03001e]">
-        <p className="text-white">Chargement...</p>
+      <main className="theme-cineclub flex items-center justify-center min-h-screen bg-background">
+        <p className="text-foreground">Chargement...</p>
       </main>
     )
   }
 
   return (
-    <main className="flex items-center justify-center min-h-screen bg-[#03001e]">
+    <main className="theme-cineclub flex items-center justify-center min-h-screen bg-background">
       <div className="text-center">
-        <h1 className="text-4xl text-white font-bold mb-4">
-          Hello {username}
-        </h1>
-        <button
+        <h1 className="text-4xl text-foreground font-bold mb-4">Hello {username}</h1>
+        <Button
           onClick={() => {
             localStorage.removeItem("token")
             router.push("/login")
           }}
-          className="mt-4 px-6 py-2 bg-[#7303c0] hover:bg-[#ec38bc] text-white rounded"
+          className="mt-4"
         >
           Se déconnecter
-        </button>
+        </Button>
       </div>
     </main>
   )

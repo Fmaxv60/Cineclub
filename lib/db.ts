@@ -5,7 +5,7 @@ if (!process.env.POSTGRES_DB || !process.env.POSTGRES_USER || !process.env.POSTG
 }
 
 const pool = new Pool({
-  host: process.env.POSTGRES_HOST || '100.100.163.122',
+  host: process.env.POSTGRES_HOST || '192.168.1.21',
   port: Number(process.env.POSTGRES_PORT) || 5433,
   database: process.env.POSTGRES_DB,
   user: process.env.POSTGRES_USER,
