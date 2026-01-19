@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "db:migrate": "node scripts/db-migrate.js"
+    "migrate": "node scripts/db-migrate.js"
   },
   "dependencies": {
     "@radix-ui/react-label": "^2.1.8",

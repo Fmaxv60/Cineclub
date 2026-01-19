@@ -56,7 +56,7 @@ export function LoginForm() {
       }
 
       // Stockage du token
-      localStorage.setItem("token", data.token)
+      localStorage.setItem("token", data.token) 
 
       toast("Connexion réussie !", {
         description: "Bienvenue " + data.user.username,

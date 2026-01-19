@@ -66,14 +66,14 @@ CREATE INDEX IF NOT EXISTS idx_rating_movie ON "Rating"(tmdb_movie_id);
 async function run() {
   const client = await pool.connect();
   try {
-    console.log('🚀 Lancement des migrations...');
+    console.log('Table creation started...');
     await client.query('BEGIN');
     await client.query(migrations);
     await client.query('COMMIT');
-    console.log('✅ Migrations terminées');
+    console.log('Table creation completed successfully');
   } catch (err) {
     await client.query('ROLLBACK');
-    console.error('❌ Échec des migrations', err);
+    console.error('Table creation failed', err);
     process.exitCode = 1;
   } finally {
     client.release();
