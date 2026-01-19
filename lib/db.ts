@@ -1,15 +1,18 @@
 import { Pool } from 'pg';
 
-if (!process.env.POSTGRES_DB || !process.env.POSTGRES_USER || !process.env.POSTGRES_PASSWORD) {
+// En mode build Next.js, on ne valide pas (les routes API ne sont pas réellement appelées)
+const isBuildTime = process.env.NEXT_PHASE === 'phase-production-build';
+
+if (!isBuildTime && (!process.env.POSTGRES_DB || !process.env.POSTGRES_USER || !process.env.POSTGRES_PASSWORD)) {
   throw new Error('POSTGRES_DB, POSTGRES_USER et POSTGRES_PASSWORD doivent être définies');
 }
 
 const pool = new Pool({
   host: process.env.POSTGRES_HOST || '192.168.1.21',
   port: Number(process.env.POSTGRES_PORT) || 5433,
-  database: process.env.POSTGRES_DB,
-  user: process.env.POSTGRES_USER,
-  password: process.env.POSTGRES_PASSWORD,
+  database: process.env.POSTGRES_DB || 'dummy',
+  user: process.env.POSTGRES_USER || 'dummy',
+  password: process.env.POSTGRES_PASSWORD || 'dummy',
   max: Number(process.env.POSTGRES_POOL_MAX) || 20,
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 2000,
