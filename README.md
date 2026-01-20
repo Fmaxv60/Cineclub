@@ -1,6 +1,10 @@
 # Cineclub
 
-Une web app pour regarder des films ensemble, noter et organiser des salons privés ou publics avec vos amis.
+Cineclub is a self host letterbox-like app that allows you to find and rate movies, TV shows and series. You can also create session and invite friends to watch film together.
+
+# Architecture
+
+The application is running on Next.js. It also use TMDB for the Shows API and a postgre database to store ratings, sessions and user.
 
 # Deployement
 
