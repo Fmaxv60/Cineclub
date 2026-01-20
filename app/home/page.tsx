@@ -59,6 +59,7 @@ export default function Home() {
         >
           Se déconnecter
         </Button>
+        <h2>v 0.1.0</h2>
       </div>
     </main>
   )
