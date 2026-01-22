@@ -6,6 +6,7 @@ import { getMovieDetails, getTMDBImageUrl } from '@/lib/tmdb';
 import { ArrowLeft, Calendar, Star, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import ReviewSection from '@/components/logic/review-section';
 
 interface MovieDetails {
   id: number;
@@ -33,6 +34,7 @@ export default function MoviePage() {
   const [movie, setMovie] = useState<MovieDetails | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [averageRating, setAverageRating] = useState<number>(0);
 
   useEffect(() => {
     if (!movieId) return;
@@ -152,7 +154,16 @@ export default function MoviePage() {
                   <Star className="size-4 fill-current" />
                   {movie.vote_average.toFixed(1)}/10
                   <span className="text-muted-foreground font-normal">
-                    ({movie.vote_count} votes)
+                    ({movie.vote_count} votes TMDB)
+                  </span>
+                </div>
+              )}
+              {averageRating > 0 && (
+                <div className="flex items-center gap-2 text-lime-500 font-semibold">
+                  <Star className="size-4 fill-current" />
+                  {averageRating.toFixed(1)}/10
+                  <span className="text-muted-foreground font-normal">
+                    (Cineclub)
                   </span>
                 </div>
               )}
@@ -200,6 +211,14 @@ export default function MoviePage() {
               </div>
             )}
           </div>
+        </div>
+
+        {/* Section des avis */}
+        <div className="mt-12">
+          <ReviewSection 
+            movieId={movie.id} 
+            onAverageChange={setAverageRating}
+          />
         </div>
       </div>
     </div>
