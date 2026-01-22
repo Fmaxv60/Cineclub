@@ -91,7 +91,7 @@ export default function Avatar() {
             Déconnexion
           </button>
           <div className="border-t border-border px-4 py-2 mt-2">
-            <p className="text-xs text-muted-foreground text-right">v 0.1.0</p>
+            <p className="text-xs text-muted-foreground text-right">v 0.1.1</p>
           </div>
         </div>
       )}
