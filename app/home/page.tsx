@@ -18,7 +18,6 @@ export default function Home() {
       return
     }
 
-    // Récupérer les infos de l'utilisateur
     fetch("/api/auth/me", {
       headers: {
         Authorization: `Bearer ${token}`,

@@ -140,7 +140,7 @@
   --muted-foreground: #e6f2ea;
   --accent: #A9D066; /* highlight */
   --accent-foreground: #072824;
-  --destructive: #B00020; /* reste rouge pour les erreurs */
+  --destructive: oklch(0.577 0.245 27.325); /* reste rouge pour les erreurs */
   --border: #3D7A52;
   --input: #3D7A52; /* bord des inputs */
   --ring: #A9D066; /* focus */
