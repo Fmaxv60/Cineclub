@@ -45,7 +45,7 @@ export function verifyToken(token: string): { userId: string } | null {
  */
 export async function getUserById(id: string): Promise<User | null> {
   const users = await query<User>(
-    'SELECT id, username, email, password_hash, role, created_at FROM "User" WHERE id = $1',
+    'SELECT id, username, email, password_hash, role, status, created_at FROM "User" WHERE id = $1',
     [id]
   );
   return users[0] || null;
@@ -56,7 +56,7 @@ export async function getUserById(id: string): Promise<User | null> {
  */
 export async function getUserByEmail(email: string): Promise<User | null> {
   const users = await query<User>(
-    'SELECT id, username, email, password_hash, role, created_at FROM "User" WHERE email = $1',
+    'SELECT id, username, email, password_hash, role, status, created_at FROM "User" WHERE email = $1',
     [email]
   );
   return users[0] || null;
@@ -67,7 +67,7 @@ export async function getUserByEmail(email: string): Promise<User | null> {
  */
 export async function getUserByUsername(username: string): Promise<User | null> {
   const users = await query<User>(
-    'SELECT id, username, email, password_hash, role, created_at FROM "User" WHERE username = $1',
+    'SELECT id, username, email, password_hash, role, status, created_at FROM "User" WHERE username = $1',
     [username]
   );
   return users[0] || null;
@@ -83,11 +83,19 @@ export async function createUser(
 ): Promise<User> {
   const password_hash = await hashPassword(password);
 
+  // Vérifier si c'est le premier utilisateur
+  const userCount = await query<{ count: string }>(
+    'SELECT COUNT(*) as count FROM "User"'
+  );
+  const isFirstUser = parseInt(userCount[0]?.count || '0', 10) === 0;
+  const role = isFirstUser ? 'admin' : 'user';
+  const status = isFirstUser ? 'active' : 'pending';
+
   const users = await query<User>(
-    `INSERT INTO "User" (username, email, password_hash, role)
-     VALUES ($1, $2, $3, 'user')
-     RETURNING id, username, email, password_hash, role, created_at`,
-    [username, email, password_hash]
+    `INSERT INTO "User" (username, email, password_hash, role, status)
+     VALUES ($1, $2, $3, $4, $5)
+     RETURNING id, username, email, password_hash, role, status, created_at`,
+    [username, email, password_hash, role, status]
   );
 
   if (!users[0]) {
@@ -103,7 +111,7 @@ export async function createUser(
 export async function authenticateUser(
   email: string,
   password: string
-): Promise<{ user: User; token: string } | null> {
+): Promise<{ user: User; token: string } | { error: string } | null> {
   const user = await getUserByEmail(email);
 
   if (!user) {
@@ -116,6 +124,14 @@ export async function authenticateUser(
     return null;
   }
 
+  if (user.status !== 'active') {
+    const message =
+      user.status === 'pending'
+        ? 'Votre compte est en attente d\'approbation par un administrateur'
+        : 'Votre compte est désactivé';
+    return { error: message };
+  }
+
   const token = createToken(user.id);
 
   return {
@@ -126,6 +142,7 @@ export async function authenticateUser(
       password_hash: user.password_hash,
       role: user.role,
       created_at: user.created_at,
+      status: user.status,
     },
     token,
   };

@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { getMovieDetails, getTMDBImageUrl } from '@/lib/tmdb';
-import { ArrowLeft, Calendar, Star, Clock } from 'lucide-react';
+import { getTokenFromStorage } from '@/lib/token';
+import { ArrowLeft, Calendar, Star, Clock, Heart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import ReviewSection from '@/components/logic/review-section';
@@ -35,6 +36,8 @@ export default function MoviePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [averageRating, setAverageRating] = useState<number>(0);
+  const [isFavorite, setIsFavorite] = useState(false);
+  const [isFavoriteLoading, setIsFavoriteLoading] = useState(false);
 
   useEffect(() => {
     if (!movieId) return;
@@ -54,6 +57,67 @@ export default function MoviePage() {
 
     fetchMovieDetails();
   }, [movieId]);
+
+  useEffect(() => {
+    if (!movieId) return;
+
+    const checkFavorite = async () => {
+      const token = getTokenFromStorage();
+      if (!token) {
+        setIsFavorite(false);
+        return;
+      }
+
+      try {
+        setIsFavoriteLoading(true);
+        const response = await fetch(`/api/favorites/${movieId}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          setIsFavorite(!!data.isFavorite);
+        }
+      } catch (err) {
+        console.error('Erreur lors de la récupération des favoris:', err);
+      } finally {
+        setIsFavoriteLoading(false);
+      }
+    };
+
+    checkFavorite();
+  }, [movieId]);
+
+  const handleToggleFavorite = async () => {
+    const token = getTokenFromStorage();
+    if (!token) {
+      router.push('/login');
+      return;
+    }
+
+    try {
+      setIsFavoriteLoading(true);
+      const method = isFavorite ? 'DELETE' : 'POST';
+      const response = await fetch(`/api/favorites/${movieId}`, {
+        method,
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        setIsFavorite(!isFavorite);
+      } else {
+        console.error('Impossible de mettre à jour les favoris');
+      }
+    } catch (err) {
+      console.error('Erreur lors de la mise à jour des favoris:', err);
+    } finally {
+      setIsFavoriteLoading(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -121,7 +185,7 @@ export default function MoviePage() {
           )}
 
           {/* Informations */}
-          <div className="flex-1">
+          <div className="flex-1 flex flex-col">
             <h1 className="text-4xl font-bold text-foreground mb-2">
               {movie.title}
             </h1>
@@ -130,6 +194,7 @@ export default function MoviePage() {
                 "{movie.tagline}"
               </p>
             )}
+
 
             {/* Métadonnées */}
             <div className="flex flex-wrap gap-4 mb-6 text-sm">
@@ -155,15 +220,6 @@ export default function MoviePage() {
                   {movie.vote_average.toFixed(1)}/10
                   <span className="text-muted-foreground font-normal">
                     ({movie.vote_count} votes TMDB)
-                  </span>
-                </div>
-              )}
-              {averageRating > 0 && (
-                <div className="flex items-center gap-2 text-lime-500 font-semibold">
-                  <Star className="size-4 fill-current" />
-                  {averageRating.toFixed(1)}/10
-                  <span className="text-muted-foreground font-normal">
-                    (Cineclub)
                   </span>
                 </div>
               )}
@@ -210,6 +266,21 @@ export default function MoviePage() {
                 </div>
               </div>
             )}
+
+            {/* Add to favorites or, to watch */}
+            <div className="flex flex-wrap items-center gap-3 mt-auto pt-4">
+              <Button
+                onClick={handleToggleFavorite}
+                disabled={isFavoriteLoading}
+                variant={isFavorite ? 'secondary' : 'default'}
+                className={isFavorite ? 'border border-accent text-accent' : ''}
+              >
+                <Heart
+                  className={`mr-2 size-4 ${isFavorite ? 'fill-current text-accent' : ''}`}
+                />
+                {isFavorite ? 'Retirer des favoris' : 'Ajouter aux favoris'}
+              </Button>
+            </div>
           </div>
         </div>
 

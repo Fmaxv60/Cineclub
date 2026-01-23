@@ -1,4 +1,5 @@
 export type UserRole = 'user' | 'admin';
+export type UserStatus = 'pending' | 'active' | 'inactive';
 export type RoomMemberRole = 'member' | 'moderator' | 'owner';
 
 export interface User {
@@ -7,6 +8,7 @@ export interface User {
   email: string;
   password_hash: string;
   role: UserRole;
+  status: UserStatus;
   created_at: Date;
 }
 

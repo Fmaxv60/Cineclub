@@ -25,6 +25,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if ('error' in result) {
+      return NextResponse.json(
+        { message: result.error },
+        { status: 403 }
+      );
+    }
+
     const { user, token } = result;
 
     return NextResponse.json(
@@ -36,6 +43,7 @@ export async function POST(request: NextRequest) {
           username: user.username,
           email: user.email,
           role: user.role,
+          status: user.status,
         },
       },
       { status: 200 }
