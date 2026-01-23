@@ -49,15 +49,6 @@ export default function Home() {
     <main className="theme-cineclub flex items-center justify-center min-h-screen bg-background">
       <div className="text-center">
         <h1 className="text-4xl text-foreground font-bold mb-4">Hello {username}</h1>
-        <Button
-          onClick={() => {
-            localStorage.removeItem("token")
-            router.push("/login")
-          }}
-          className="mt-4"
-        >
-          Se déconnecter
-        </Button>
       </div>
     </main>
   )

@@ -119,8 +119,15 @@
   * {
     @apply border-border outline-ring/50;
   }
+  html {
+    overscroll-behavior: none;
+    overflow: hidden;
+  }
   body {
     @apply bg-background text-foreground;
+    overscroll-behavior: none;
+    overflow: auto;
+    height: 100vh;
   }
 }
 
