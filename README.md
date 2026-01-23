@@ -28,6 +28,7 @@ services:
       POSTGRES_PASSWORD: changeme
       POSTGRES_POOL_MAX: 20
       JWT_SECRET: changeme
+      TMDB_APIKEY: changeme
       NODE_ENV: production
     depends_on:
       - db
