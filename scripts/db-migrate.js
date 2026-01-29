@@ -28,8 +28,10 @@ CREATE TABLE IF NOT EXISTS "User" (
   email TEXT NOT NULL UNIQUE,
   password_hash TEXT NOT NULL,
   role TEXT NOT NULL DEFAULT 'user',
+  status TEXT NOT NULL DEFAULT 'pending',
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  CHECK (role IN ('user', 'admin'))
+  CHECK (role IN ('user', 'admin')),
+  CHECK (status IN ('pending', 'active', 'inactive'))
 );
 
 CREATE TABLE IF NOT EXISTS "Room" (
@@ -59,6 +61,13 @@ CREATE TABLE IF NOT EXISTS "Rating" (
   CONSTRAINT rating_user_movie_unique UNIQUE (user_id, tmdb_movie_id)
 );
 
+CREATE TABLE IF NOT EXISTS "Favorites" (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES "User"(id) ON DELETE CASCADE,
+  tmdb_movie_id INTEGER NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 CREATE INDEX IF NOT EXISTS idx_room_owner ON "Room"(owner_id);
 CREATE INDEX IF NOT EXISTS idx_rating_movie ON "Rating"(tmdb_movie_id);
 `;
@@ -66,14 +75,14 @@ CREATE INDEX IF NOT EXISTS idx_rating_movie ON "Rating"(tmdb_movie_id);
 async function run() {
   const client = await pool.connect();
   try {
-    console.log('🚀 Lancement des migrations...');
+    console.log('Table creation started...');
     await client.query('BEGIN');
     await client.query(migrations);
     await client.query('COMMIT');
-    console.log('✅ Migrations terminées');
+    console.log('Table creation completed successfully');
   } catch (err) {
     await client.query('ROLLBACK');
-    console.error('❌ Échec des migrations', err);
+    console.error('Table creation failed', err);
     process.exitCode = 1;
   } finally {
     client.release();

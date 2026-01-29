@@ -39,3 +39,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+types/validator.ts
+types/routes.d.ts
+types/cache-life.d.ts
