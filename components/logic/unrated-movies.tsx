@@ -107,7 +107,7 @@ export default function UnratedMoviesReminder() {
         <div className="space-y-2">
           {movies.map((movie) => {
             const posterUrl = movie.movie?.poster_path
-              ? getTMDBImageUrl(movie.movie.poster_path, 'w200')
+              ? getTMDBImageUrl(movie.movie.poster_path, 'w185')
               : null;
 
             return (
