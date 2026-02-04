@@ -21,6 +21,14 @@ export async function GET(request: NextRequest) {
 
     const token = authHeader.substring(7);
     const decoded = verifyToken(token);
+    
+    if (!decoded) {
+      return NextResponse.json(
+        { error: 'Token invalide' },
+        { status: 401 }
+      );
+    }
+    
     const userId = decoded.userId;
 
     // Récupérer les films des séances passées non notées
