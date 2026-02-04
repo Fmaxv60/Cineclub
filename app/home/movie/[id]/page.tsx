@@ -61,6 +61,32 @@ export default function MoviePage() {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [sessionDateTime, setSessionDateTime] = useState('');
   const [isCreatingRoom, setIsCreatingRoom] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  useEffect(() => {
+    const fetchCurrentUser = async () => {
+      const token = getTokenFromStorage();
+      if (!token) return;
+
+      try {
+        const response = await fetch('/api/auth/me', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          setCurrentUserId(data.id);
+        }
+      } catch (err) {
+        console.error('Erreur lors de la récupération de l\'utilisateur:', err);
+      }
+    };
+
+    fetchCurrentUser();
+  }, []);
 
   useEffect(() => {
     if (!movieId) return;
@@ -141,7 +167,7 @@ export default function MoviePage() {
     };
 
     fetchRooms();
-  }, [movieId]);
+  }, [movieId, refreshKey]);
 
   const handleToggleFavorite = async () => {
     const token = getTokenFromStorage();
@@ -208,6 +234,34 @@ export default function MoviePage() {
       console.error('Erreur lors de la création de la salle:', err);
     } finally {
       setIsCreatingRoom(false);
+    }
+  };
+
+  const handleJoinRoom = async (roomId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const token = getTokenFromStorage();
+    if (!token) {
+      router.push('/login');
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/rooms/${roomId}/join`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        // Forcer le rechargement des salles
+        setRefreshKey(prev => prev + 1);
+      } else {
+        const error = await response.json();
+        console.error('Impossible de rejoindre la salle:', error.error);
+      }
+    } catch (err) {
+      console.error('Erreur lors de la jonction à la salle:', err);
     }
   };
 
@@ -385,125 +439,140 @@ export default function MoviePage() {
         </div>
 
         {/* Section des salles */}
-        <div className="mt-12">
-          <h2 className="text-2xl font-semibold text-foreground mb-6">Salles de visionnage</h2>
+        <div className="mt-12 space-y-8">
+          <h2 className="text-2xl font-semibold text-foreground">Salles de visionnage</h2>
           
-          {/* Formulaire de création */}
-          <Card className="p-6 mb-8 bg-card border border-border">
-            {!showCreateForm ? (
-              <Button 
-                onClick={() => setShowCreateForm(true)}
-                className="w-full md:w-auto"
-              >
-                <Plus className="mr-2 size-4" />
-                Créer une salle
-              </Button>
-            ) : (
-              <form onSubmit={handleCreateRoom} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">
-                    Date et heure de la séance
-                  </label>
-                  <Input
-                    type="datetime-local"
-                    value={sessionDateTime}
-                    onChange={(e) => setSessionDateTime(e.target.value)}
-                    required
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Colonne gauche - Formulaire de création */}
+            <div className="lg:col-span-1">
+              <Card className="p-6 bg-card border border-border sticky top-4">
+                {!showCreateForm ? (
+                  <Button 
+                    onClick={() => setShowCreateForm(true)}
                     className="w-full"
-                  />
-                </div>
-                <div className="flex gap-2">
-                  <Button 
-                    type="submit" 
-                    disabled={isCreatingRoom}
-                    className="flex-1 md:flex-none"
                   >
-                    Créer
+                    <Plus className="mr-2 size-4" />
+                    Créer une salle
                   </Button>
-                  <Button 
-                    type="button" 
-                    variant="outline"
-                    onClick={() => {
-                      setShowCreateForm(false);
-                      setSessionDateTime('');
-                    }}
-                    className="flex-1 md:flex-none"
-                  >
-                    Annuler
-                  </Button>
-                </div>
-              </form>
-            )}
-          </Card>
+                ) : (
+                  <form onSubmit={handleCreateRoom} className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-2">
+                        Date et heure de la séance
+                      </label>
+                      <Input
+                        type="datetime-local"
+                        value={sessionDateTime}
+                        onChange={(e) => setSessionDateTime(e.target.value)}
+                        required
+                        className="w-full"
+                      />
+                    </div>
+                    <div className="flex gap-2 flex-col">
+                      <Button 
+                        type="submit" 
+                        disabled={isCreatingRoom}
+                        className="w-full"
+                      >
+                        Créer
+                      </Button>
+                      <Button 
+                        type="button" 
+                        variant="outline"
+                        onClick={() => {
+                          setShowCreateForm(false);
+                          setSessionDateTime('');
+                        }}
+                        className="w-full"
+                      >
+                        Annuler
+                      </Button>
+                    </div>
+                  </form>
+                )}
+              </Card>
+            </div>
 
+            {/* Colonne droite - Sessions */}
+            <div className="lg:col-span-2 space-y-8">
+              {rooms.length === 0 && !isLoadingRooms ? (
+                <Card className="p-8 text-center bg-card border border-border/50">
+                  <p className="text-muted-foreground">Aucune salle pour ce film pour l'instant</p>
+                </Card>
+              ) : null}
+            </div>
+          </div>
+
+          {/* Séances à venir et passées côte à côte */}
+          <div className="flex flex-col lg:flex-row gap-8 items-start">
           {/* Séances à venir */}
           {upcomingRooms.length > 0 && (
-            <div className="mb-8">
-              <h3 className="text-lg font-semibold text-foreground mb-4">
+            <div className="flex-1">
+              <h2 className="text-2xl font-semibold text-foreground mb-6">
                 Séances à venir ({upcomingRooms.length})
-              </h3>
-              <div className="flex gap-4 overflow-x-auto pb-4">
-                {upcomingRooms.map((room) => (
-                  <Card 
-                    key={room.id} 
-                    className="flex-shrink-0 p-4 bg-card border border-border min-w-80"
-                  >
-                    <div className="flex items-start justify-between mb-3">
-                      <div>
-                        <p className="font-semibold text-foreground text-sm">
-                          {room.owner?.username || 'Utilisateur inconnu'}
-                        </p>
-                        <p className="text-xs text-muted-foreground">Créateur</p>
+              </h2>
+              <div className="grid grid-cols-1 gap-4">
+                {upcomingRooms.map((room) => {
+                  return (
+                    <Card 
+                      key={room.id} 
+                      className="p-4 bg-card border border-border cursor-pointer hover:border-accent transition-all hover:shadow-lg"
+                      onClick={() => router.push(`/home/room/${room.id}`)}
+                    >
+                      <div className="flex items-start justify-between mb-3">
+                        <div>
+                          <p className="font-semibold text-foreground text-sm">
+                            {room.owner?.username || 'Utilisateur inconnu'}
+                          </p>
+                          <p className="text-xs text-muted-foreground">Créateur</p>
+                        </div>
+                        {room.is_private && (
+                          <span className="text-xs bg-accent/20 text-accent px-2 py-1 rounded">
+                            Privée
+                          </span>
+                        )}
                       </div>
-                      {room.is_private && (
-                        <span className="text-xs bg-accent/20 text-accent px-2 py-1 rounded">
-                          Privée
-                        </span>
-                      )}
-                    </div>
 
-                    <div className="space-y-2 mb-4">
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Calendar className="size-4" />
-                        {new Date(room.session_datetime).toLocaleDateString('fr-FR', {
-                          year: 'numeric',
-                          month: 'long',
-                          day: 'numeric',
-                        })}
+                      <div className="space-y-2 mb-4">
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Calendar className="size-4" />
+                          {new Date(room.session_datetime).toLocaleDateString('fr-FR', {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric',
+                          })}
+                        </div>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Clock className="size-4" />
+                          {new Date(room.session_datetime).toLocaleTimeString('fr-FR', {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
+                        </div>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Users className="size-4" />
+                          {(room.members?.length || 0) + 1} participant(s)
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Clock className="size-4" />
-                        {new Date(room.session_datetime).toLocaleTimeString('fr-FR', {
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })}
-                      </div>
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Users className="size-4" />
-                        {(room.members?.length || 0) + 1} participant(s)
-                      </div>
-                    </div>
-
-                    <Button className="w-full" size="sm">
-                      Rejoindre
-                    </Button>
-                  </Card>
-                ))}
+                    </Card>
+                  );
+                })}
               </div>
             </div>
           )}
 
           {/* Séances passées */}
           {pastRooms.length > 0 && (
-            <div>
-              <h3 className="text-lg font-semibold text-foreground mb-4">
+            <div className="flex-1">
+              <h2 className="text-2xl font-semibold text-foreground mb-6">
                 Séances passées ({pastRooms.length})
-              </h3>
+              </h2>
               <div className="space-y-3">
                 {pastRooms.map((room) => (
                   <Card 
                     key={room.id} 
-                    className="p-4 bg-card border border-border/50 opacity-75"
+                    className="p-4 bg-card border border-border/50 opacity-75 cursor-pointer hover:opacity-100 hover:border-accent transition-all"
+                    onClick={() => router.push(`/home/room/${room.id}`)}
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex-1">
@@ -536,12 +605,7 @@ export default function MoviePage() {
               </div>
             </div>
           )}
-
-          {rooms.length === 0 && !isLoadingRooms && (
-            <Card className="p-8 text-center bg-card border border-border/50">
-              <p className="text-muted-foreground">Aucune salle pour ce film pour l'instant</p>
-            </Card>
-          )}
+          </div>
         </div>
 
         {/* Section des avis */}

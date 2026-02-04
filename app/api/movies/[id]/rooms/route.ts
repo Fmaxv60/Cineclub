@@ -53,8 +53,8 @@ export async function GET(
           `SELECT rm.user_id, u.username 
            FROM "RoomMember" rm
            JOIN "User" u ON rm.user_id = u.id
-           WHERE rm.room_id = $1`,
-          [room.id]
+           WHERE rm.room_id = $1 AND rm.user_id != $2`,
+          [room.id, room.owner_id]
         );
 
         return {
