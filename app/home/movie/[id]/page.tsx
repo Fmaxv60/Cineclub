@@ -4,9 +4,10 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { getMovieDetails, getTMDBImageUrl } from '@/lib/tmdb';
 import { getTokenFromStorage } from '@/lib/token';
-import { ArrowLeft, Calendar, Star, Clock, Heart } from 'lucide-react';
+import { ArrowLeft, Calendar, Star, Clock, Heart, Users, Plus, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import ReviewSection from '@/components/logic/review-section';
 
 interface MovieDetails {
@@ -27,6 +28,23 @@ interface MovieDetails {
   tagline: string;
 }
 
+interface Room {
+  id: string;
+  owner_id: string;
+  tmdb_movie_id: number;
+  session_datetime: string;
+  is_private: boolean;
+  created_at: string;
+  owner?: {
+    id: string;
+    username: string;
+  };
+  members?: Array<{
+    user_id: string;
+    username: string;
+  }>;
+}
+
 export default function MoviePage() {
   const params = useParams();
   const router = useRouter();
@@ -38,6 +56,37 @@ export default function MoviePage() {
   const [averageRating, setAverageRating] = useState<number>(0);
   const [isFavorite, setIsFavorite] = useState(false);
   const [isFavoriteLoading, setIsFavoriteLoading] = useState(false);
+  const [rooms, setRooms] = useState<Room[]>([]);
+  const [isLoadingRooms, setIsLoadingRooms] = useState(false);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [sessionDateTime, setSessionDateTime] = useState('');
+  const [isCreatingRoom, setIsCreatingRoom] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  useEffect(() => {
+    const fetchCurrentUser = async () => {
+      const token = getTokenFromStorage();
+      if (!token) return;
+
+      try {
+        const response = await fetch('/api/auth/me', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          setCurrentUserId(data.id);
+        }
+      } catch (err) {
+        console.error('Erreur lors de la récupération de l\'utilisateur:', err);
+      }
+    };
+
+    fetchCurrentUser();
+  }, []);
 
   useEffect(() => {
     if (!movieId) return;
@@ -90,6 +139,36 @@ export default function MoviePage() {
     checkFavorite();
   }, [movieId]);
 
+  useEffect(() => {
+    if (!movieId) return;
+
+    const fetchRooms = async () => {
+      try {
+        setIsLoadingRooms(true);
+        const token = getTokenFromStorage();
+        const headers: HeadersInit = {};
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`;
+        }
+
+        const response = await fetch(`/api/movies/${movieId}/rooms`, {
+          headers,
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          setRooms(data);
+        }
+      } catch (err) {
+        console.error('Erreur lors du chargement des salles:', err);
+      } finally {
+        setIsLoadingRooms(false);
+      }
+    };
+
+    fetchRooms();
+  }, [movieId, refreshKey]);
+
   const handleToggleFavorite = async () => {
     const token = getTokenFromStorage();
     if (!token) {
@@ -119,6 +198,73 @@ export default function MoviePage() {
     }
   };
 
+  const handleCreateRoom = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const token = getTokenFromStorage();
+    if (!token) {
+      router.push('/login');
+      return;
+    }
+
+    if (!sessionDateTime || !movie) return;
+
+    try {
+      setIsCreatingRoom(true);
+      const response = await fetch(`/api/movies/${movieId}/rooms`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          session_datetime: sessionDateTime,
+          is_private: false,
+        }),
+      });
+
+      if (response.ok) {
+        const newRoom = await response.json();
+        setRooms([newRoom, ...rooms]);
+        setSessionDateTime('');
+        setShowCreateForm(false);
+      } else {
+        console.error('Impossible de créer la salle');
+      }
+    } catch (err) {
+      console.error('Erreur lors de la création de la salle:', err);
+    } finally {
+      setIsCreatingRoom(false);
+    }
+  };
+
+  const handleJoinRoom = async (roomId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const token = getTokenFromStorage();
+    if (!token) {
+      router.push('/login');
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/rooms/${roomId}/join`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        // Forcer le rechargement des salles
+        setRefreshKey(prev => prev + 1);
+      } else {
+        const error = await response.json();
+        console.error('Impossible de rejoindre la salle:', error.error);
+      }
+    } catch (err) {
+      console.error('Erreur lors de la jonction à la salle:', err);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="theme-cineclub flex items-center justify-center min-h-screen bg-background">
@@ -143,6 +289,14 @@ export default function MoviePage() {
       </div>
     );
   }
+
+  const now = new Date();
+  const upcomingRooms = rooms.filter(room => new Date(room.session_datetime) > now).sort((a, b) => 
+    new Date(a.session_datetime).getTime() - new Date(b.session_datetime).getTime()
+  );
+  const pastRooms = rooms.filter(room => new Date(room.session_datetime) <= now).sort((a, b) => 
+    new Date(b.session_datetime).getTime() - new Date(a.session_datetime).getTime()
+  );
 
   const backdropUrl = getTMDBImageUrl(movie.backdrop_path, 'original');
   const posterUrl = getTMDBImageUrl(movie.poster_path, 'w500');
@@ -281,6 +435,176 @@ export default function MoviePage() {
                 {isFavorite ? 'Retirer des favoris' : 'Ajouter aux favoris'}
               </Button>
             </div>
+          </div>
+        </div>
+
+        {/* Section des salles */}
+        <div className="mt-12 space-y-8">
+          <h2 className="text-2xl font-semibold text-foreground">Salles de visionnage</h2>
+          
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Colonne gauche - Formulaire de création */}
+            <div className="lg:col-span-1">
+              <Card className="p-6 bg-card border border-border sticky top-4">
+                {!showCreateForm ? (
+                  <Button 
+                    onClick={() => setShowCreateForm(true)}
+                    className="w-full"
+                  >
+                    <Plus className="mr-2 size-4" />
+                    Créer une salle
+                  </Button>
+                ) : (
+                  <form onSubmit={handleCreateRoom} className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-2">
+                        Date et heure de la séance
+                      </label>
+                      <Input
+                        type="datetime-local"
+                        value={sessionDateTime}
+                        onChange={(e) => setSessionDateTime(e.target.value)}
+                        required
+                        className="w-full"
+                      />
+                    </div>
+                    <div className="flex gap-2 flex-col">
+                      <Button 
+                        type="submit" 
+                        disabled={isCreatingRoom}
+                        className="w-full"
+                      >
+                        Créer
+                      </Button>
+                      <Button 
+                        type="button" 
+                        variant="outline"
+                        onClick={() => {
+                          setShowCreateForm(false);
+                          setSessionDateTime('');
+                        }}
+                        className="w-full"
+                      >
+                        Annuler
+                      </Button>
+                    </div>
+                  </form>
+                )}
+              </Card>
+            </div>
+
+            {/* Colonne droite - Sessions */}
+            <div className="lg:col-span-2 space-y-8">
+              {rooms.length === 0 && !isLoadingRooms ? (
+                <Card className="p-8 text-center bg-card border border-border/50">
+                  <p className="text-muted-foreground">Aucune salle pour ce film pour l'instant</p>
+                </Card>
+              ) : null}
+            </div>
+          </div>
+
+          {/* Séances à venir et passées côte à côte */}
+          <div className="flex flex-col lg:flex-row gap-8 items-start">
+          {/* Séances à venir */}
+          {upcomingRooms.length > 0 && (
+            <div className="flex-1">
+              <h2 className="text-2xl font-semibold text-foreground mb-6">
+                Séances à venir ({upcomingRooms.length})
+              </h2>
+              <div className="grid grid-cols-1 gap-4">
+                {upcomingRooms.map((room) => {
+                  return (
+                    <Card 
+                      key={room.id} 
+                      className="p-4 bg-card border border-border cursor-pointer hover:border-accent transition-all hover:shadow-lg"
+                      onClick={() => router.push(`/home/room/${room.id}`)}
+                    >
+                      <div className="flex items-start justify-between mb-3">
+                        <div>
+                          <p className="font-semibold text-foreground text-sm">
+                            {room.owner?.username || 'Utilisateur inconnu'}
+                          </p>
+                          <p className="text-xs text-muted-foreground">Créateur</p>
+                        </div>
+                        {room.is_private && (
+                          <span className="text-xs bg-accent/20 text-accent px-2 py-1 rounded">
+                            Privée
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="space-y-2 mb-4">
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Calendar className="size-4" />
+                          {new Date(room.session_datetime).toLocaleDateString('fr-FR', {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric',
+                          })}
+                        </div>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Clock className="size-4" />
+                          {new Date(room.session_datetime).toLocaleTimeString('fr-FR', {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
+                        </div>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Users className="size-4" />
+                          {(room.members?.length || 0) + 1} participant(s)
+                        </div>
+                      </div>
+                    </Card>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Séances passées */}
+          {pastRooms.length > 0 && (
+            <div className="flex-1">
+              <h2 className="text-2xl font-semibold text-foreground mb-6">
+                Séances passées ({pastRooms.length})
+              </h2>
+              <div className="space-y-3">
+                {pastRooms.map((room) => (
+                  <Card 
+                    key={room.id} 
+                    className="p-4 bg-card border border-border/50 opacity-75 cursor-pointer hover:opacity-100 hover:border-accent transition-all"
+                    onClick={() => router.push(`/home/room/${room.id}`)}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <p className="font-semibold text-foreground text-sm">
+                          {room.owner?.username || 'Utilisateur inconnu'}
+                        </p>
+                        <div className="flex gap-4 text-xs text-muted-foreground mt-1">
+                          <span>
+                            {new Date(room.session_datetime).toLocaleDateString('fr-FR', {
+                              year: 'numeric',
+                              month: 'long',
+                              day: 'numeric',
+                            })}
+                          </span>
+                          <span>
+                            {new Date(room.session_datetime).toLocaleTimeString('fr-FR', {
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Users className="size-3" />
+                            {(room.members?.length || 0) + 1} participant(s)
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          )}
           </div>
         </div>
 

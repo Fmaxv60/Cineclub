@@ -36,11 +36,11 @@ CREATE TABLE IF NOT EXISTS "User" (
 
 CREATE TABLE IF NOT EXISTS "Room" (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  name TEXT NOT NULL,
   owner_id UUID NOT NULL REFERENCES "User"(id) ON DELETE CASCADE,
+  tmdb_movie_id INTEGER NOT NULL,
+  session_datetime TIMESTAMPTZ NOT NULL,
   is_private BOOLEAN NOT NULL DEFAULT false,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  CONSTRAINT room_owner_name_unique UNIQUE (owner_id, name)
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS "RoomMember" (
