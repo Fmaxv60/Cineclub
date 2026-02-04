@@ -25,7 +25,9 @@ export async function GET(request: NextRequest) {
       const token = authHeader.substring(7);
       try {
         const decoded = verifyToken(token);
-        userId = decoded.userId;
+        if (decoded) {
+          userId = decoded.userId;
+        }
       } catch {
         // Token invalide, on continue sans utilisateur
       }
