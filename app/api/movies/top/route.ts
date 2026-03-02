@@ -10,9 +10,9 @@ interface TopMovie {
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
-    const limit = parseInt(searchParams.get('limit') || '3');
+    const limit = parseInt(searchParams.get('limit') || '100');
 
-    // Récupérer les films avec la meilleure note moyenne
+    // Récupérer les films avec au moins 2 avis, triés par note moyenne
     const topMovies = await query<TopMovie>(
       `SELECT 
         r.tmdb_movie_id,
@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
         COUNT(*) as rating_count
       FROM "Rating" r
       GROUP BY r.tmdb_movie_id
-      HAVING COUNT(*) >= 1
+      HAVING COUNT(*) >= 2
       ORDER BY AVG(r.score) DESC
       LIMIT $1`,
       [limit]

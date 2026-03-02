@@ -63,7 +63,7 @@ export default function RoomPage() {
 
         if (response.ok) {
           const data = await response.json();
-          setCurrentUserId(data.id);
+          setCurrentUserId(data.user.id);
         }
       } catch (err) {
         console.error('Erreur lors de la récupération de l\'utilisateur:', err);
