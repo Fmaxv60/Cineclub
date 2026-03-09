@@ -23,6 +23,13 @@ export default function Navbar() {
             <SearchBar />
           </div>
 
+          <button
+            type="button"
+            onClick={() => router.push('/home/leaderboard')}
+            className="shrink-0 text-sm font-semibold text-muted-foreground hover:text-accent hover:scale-110 transition-all duration-200 uppercase tracking-wide"
+          >
+            Leaderboard
+          </button>
           <div className="shrink-0 flex justify-end">
             <Avatar />
           </div>
